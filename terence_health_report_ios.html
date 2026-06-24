@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Health Trends">
+<title>Terence Miranda — Health Trends</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  background: #f0f0ed; color: #1a1a1a; font-size: 15px; line-height: 1.6;
+  -webkit-text-size-adjust: 100%;
+}
+.page { max-width: 980px; margin: 0 auto; padding: 0 1rem 4rem; }
+
+/* HEADER */
+.report-header {
+  padding: 1.5rem 0 1.1rem; border-bottom: 2px solid #1a3a5c;
+  margin-bottom: 1.4rem; display: flex; align-items: flex-start;
+  justify-content: space-between; flex-wrap: wrap; gap: 8px;
+}
+.report-header h1 { font-size: 20px; font-weight: 600; color: #1a3a5c; line-height: 1.3; }
+.report-header .meta { font-size: 11px; color: #999; text-align: right; line-height: 1.7; }
+
+/* CONTROL BAR */
+.control-bar {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  background: #fff; border: 1px solid #e0e0da; border-radius: 10px;
+  padding: 10px 14px; margin-bottom: 1.4rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.ctrl-group { display: flex; align-items: center; gap: 7px; }
+.ctrl-label { font-size: 12px; color: #888; font-weight: 500; white-space: nowrap; }
+.ctrl-btn {
+  padding: 7px 14px; border-radius: 7px; border: 1px solid #ccc;
+  background: #fff; font-size: 12px; font-weight: 500; cursor: pointer;
+  color: #444; -webkit-tap-highlight-color: transparent; white-space: nowrap;
+  transition: all 0.1s;
+}
+.ctrl-btn.active { background: #1a3a5c; color: #fff; border-color: #1a3a5c; }
+.ctrl-divider { width: 1px; height: 26px; background: #e0e0da; margin: 0 2px; }
+.ctrl-note { font-size: 11px; color: #aaa; margin-left: auto; }
+
+/* SECTION */
+.section {
+  background: #fff; border-radius: 12px; border: 1px solid #e4e4de;
+  padding: 1.25rem 1.25rem; margin-bottom: 1.4rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.section-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #aaa; margin-bottom: 2px; }
+.section-title { font-size: 16px; font-weight: 600; color: #1a3a5c; margin-bottom: 5px; }
+.section-note { font-size: 12px; color: #666; margin-bottom: 12px; line-height: 1.5; padding-left: 9px; border-left: 3px solid #e4e4de; }
+.chart-wrap { position: relative; width: 100%; }
+
+/* LEGEND */
+.legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 9px; font-size: 11px; color: #666; }
+.legend span { display: flex; align-items: center; gap: 4px; }
+.ld { width: 9px; height: 9px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+.ll { width: 16px; height: 2px; display: inline-block; flex-shrink: 0; }
+.ldash { width: 16px; height: 0; border-top: 2px dashed currentColor; display: inline-block; flex-shrink: 0; }
+
+/* TOGGLE */
+.toggle-btn {
+  margin-top: 11px; padding: 8px 14px; border-radius: 7px;
+  border: 1px solid #ddd; background: #fafaf8;
+  font-size: 12px; font-weight: 500; color: #555; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px;
+  -webkit-tap-highlight-color: transparent;
+}
+.t-arrow { transition: transform 0.2s; display: inline-block; }
+.toggle-btn.open .t-arrow { transform: rotate(180deg); }
+
+/* DATA TABLE */
+.data-table-wrap { display: none; margin-top: 11px; border-radius: 8px; overflow: hidden; border: 1px solid #e4e4de; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.data-table-wrap.open { display: block; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 500px; }
+thead th:last-child { min-width: 220px; }
+tbody td:last-child { min-width: 220px; font-size: 11px; color: #555; line-height: 1.5; }
+thead tr { background: #1a3a5c; color: #fff; }
+thead th { padding: 8px 11px; text-align: left; font-weight: 500; font-size: 11px; white-space: nowrap; }
+tbody tr { border-bottom: 1px solid #f0f0ec; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:nth-child(even) { background: #fafaf8; }
+tbody td { padding: 7px 11px; color: #333; vertical-align: middle; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 9px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+.p-normal { background: #e6f4d8; color: #366010; }
+.p-border { background: #fff3d0; color: #7a5000; }
+.p-high   { background: #fde8e8; color: #a01818; }
+.p-low    { background: #fde8e8; color: #a01818; }
+.p-na     { background: #f0f0ec; color: #999; }
+.view-btn {
+  padding: 4px 10px; border-radius: 5px; border: 1px solid #b5d0ee;
+  background: #e8f1fb; color: #1a3a5c; font-size: 11px; font-weight: 600;
+  cursor: pointer; text-decoration: none; display: inline-block; white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* SECTION DIVIDER */
+.sec-divider { border: none; border-top: 1px solid #e0e0da; margin: 1.5rem 0 1rem; }
+.sec-group-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #999; margin-bottom: 1rem; }
+.all-params { display: none; }
+.all-params.visible { display: block; }
+.report-footer { text-align: center; font-size: 10px; color: #bbb; margin-top: 2rem; line-height: 1.9; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="report-header">
+    <div>
+      <h1>Terence Miranda<br>Health Trends</h1>
+      <div style="font-size:12px;color:#888;margin-top:2px;">Laboratory results 2014–2026</div>
+    </div>
+    <div class="meta">Metropolis · Thyrocare · 1mg<br>Updated Jun-2026</div>
+  </div>
+
+  <div class="control-bar">
+    <div class="ctrl-group">
+      <span class="ctrl-label">Range:</span>
+      <button class="ctrl-btn active" id="btn-all" onclick="setDateFilter('all')">Full history</button>
+      <button class="ctrl-btn" id="btn-r4" onclick="setDateFilter('recent')">Last 4</button>
+    </div>
+    <div class="ctrl-divider"></div>
+    <div class="ctrl-group">
+      <span class="ctrl-label">View:</span>
+      <button class="ctrl-btn active" id="btn-key" onclick="setView('key')">Key params</button>
+      <button class="ctrl-btn" id="btn-all-p" onclick="setView('all')">All params</button>
+    </div>
+    <span class="ctrl-note" id="ctrl-note">Full history · key</span>
+  </div>
+
+  <!-- KEY SECTIONS -->
+  <div id="key-sections">
+
+    <div class="section">
+      <div class="section-eyebrow">Section 1 — Diabetes</div>
+      <div class="section-title">HbA1c (%)</div>
+      <div class="section-note">Pre-diabetic range (5.7–6.4%) since Jan-22. Peak 6.2% Jan-26 — highest on record. Best: 5.3% Nov-15. Slow upward trend requires attention.</div>
+      <div class="legend">
+        <span><span class="ld" style="background:#378ADD;"></span>HbA1c</span>
+        <span><span class="ld" style="background:#639922;"></span>Normal &lt;5.7%</span>
+        <span><span class="ld" style="background:#EF9F27;"></span>Pre-diabetic</span>
+        <span><span class="ld" style="background:#E24B4A;"></span>Diabetic ≥6.5%</span>
+      </div>
+      <div class="chart-wrap" style="height:250px;"><canvas id="c-hba1c"></canvas></div>
+      <button class="toggle-btn" id="tb-hba1c" onclick="toggleTable('dt-hba1c','tb-hba1c')"><span class="t-arrow">▾</span> Show data table</button>
+      <div class="data-table-wrap" id="dt-hba1c">
+        <table><thead><tr><th>Date</th><th>HbA1c (%)</th><th>Report</th><th>Current medication (at test date)</th></tr></thead>
+        <tbody id="tbb-hba1c"></tbody></table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-eyebrow">Section 2 — Lipid Profile</div>
+      <div class="section-title">Total Cholesterol, LDL &amp; Non-HDL (mg/dL)</div>
+      <div class="section-note">Statin initiated late 2023 — LDL dropped from 149.77 to low 40s. Jan-26 spike (LDL 117, TC 203) consistent with statin pause. Recovered Apr-26 (LDL 43, TC 106). Cardiac target LDL &lt;70.</div>
+      <div class="legend">
+        <span><span class="ll" style="background:#3266ad;"></span>Total Chol</span>
+        <span><span class="ll" style="background:#E24B4A;"></span>LDL</span>
+        <span><span class="ldash" style="color:#9B59B6;"></span>Non-HDL</span>
+      </div>
+      <div class="chart-wrap" style="height:270px;"><canvas id="c-lipid1"></canvas></div>
+      <button class="toggle-btn" id="tb-lipid1" onclick="toggleTable('dt-lipid1','tb-lipid1')"><span class="t-arrow">▾</span> Show data table</button>
+      <div class="data-table-wrap" id="dt-lipid1">
+        <table><thead><tr><th>Date</th><th>TC (mg/dL)</th><th>LDL (mg/dL)</th><th>Non-HDL (mg/dL)</th><th>Report</th><th>Current medication (at test date)</th></tr></thead>
+        <tbody id="tbb-lipid1"></tbody></table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-eyebrow">Section 3 — Lipid Profile</div>
+      <div class="section-title">HDL &amp; Triglycerides (mg/dL)</div>
+      <div class="section-note">HDL above optimal 60 mg/dL for most of the period — strong protective factor. Triglycerides well controlled throughout. Most recent HDL 55 (Apr-26) dipped below optimal — monitor.</div>
+      <div class="legend">
+        <span><span class="ll" style="background:#639922;"></span>HDL (higher = better)</span>
+        <span><span class="ll" style="background:#BA7517;"></span>Triglycerides</span>
+      </div>
+      <div class="chart-wrap" style="height:250px;"><canvas id="c-lipid2"></canvas></div>
+      <button class="toggle-btn" id="tb-lipid2" onclick="toggleTable('dt-lipid2','tb-lipid2')"><span class="t-arrow">▾</span> Show data table</button>
+      <div class="data-table-wrap" id="dt-lipid2">
+        <table><thead><tr><th>Date</th><th>HDL (mg/dL)</th><th>Triglycerides (mg/dL)</th><th>Report</th><th>Current medication (at test date)</th></tr></thead>
+        <tbody id="tbb-lipid2"></tbody></table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-eyebrow">Section 4 — Liver Function</div>
+      <div class="section-title">SGOT / AST &amp; SGPT / ALT (U/L)</div>
+      <div class="section-note">Both elevated across all readings. Peak Jun-25: SGOT 62, SGPT 94 — likely statin-related. Still above range Apr-26 after 10 months. Review statin type and dose.</div>
+      <div class="legend">
+        <span><span class="ldash" style="color:#BA7517;"></span>SGOT/AST (ref &lt;37)</span>
+        <span><span class="ll" style="background:#E24B4A;"></span>SGPT/ALT (ref &lt;45)</span>
+      </div>
+      <div class="chart-wrap" style="height:250px;"><canvas id="c-liver"></canvas></div>
+      <button class="toggle-btn" id="tb-liver" onclick="toggleTable('dt-liver','tb-liver')"><span class="t-arrow">▾</span> Show data table</button>
+      <div class="data-table-wrap" id="dt-liver">
+        <table><thead><tr><th>Date</th><th>SGOT/AST (U/L)</th><th>SGPT/ALT (U/L)</th><th>Report</th><th>Current medication (at test date)</th></tr></thead>
+        <tbody id="tbb-liver"></tbody></table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-eyebrow">Section 5 — Kidney Function</div>
+      <div class="section-title">Creatinine (mg/dL)</div>
+      <div class="section-note">Stable within range for 10+ years. Rise from 1.08 (Jun-25) to 1.42 (Apr-26) — above upper limit 1.3. Rise of 0.34 in 9 months is clinically significant. Nephrology review + eGFR recommended.</div>
+      <div class="legend">
+        <span><span class="ld" style="background:#378ADD;"></span>Within range</span>
+        <span><span class="ld" style="background:#E24B4A;"></span>Above range</span>
+      </div>
+      <div class="chart-wrap" style="height:240px;"><canvas id="c-creat"></canvas></div>
+      <button class="toggle-btn" id="tb-creat" onclick="toggleTable('dt-creat','tb-creat')"><span class="t-arrow">▾</span> Show data table</button>
+      <div class="data-table-wrap" id="dt-creat">
+        <table><thead><tr><th>Date</th><th>Creatinine (mg/dL)</th><th>Report</th><th>Current medication (at test date)</th></tr></thead>
+        <tbody id="tbb-creat"></tbody></table>
+      </div>
+    </div>
+
+  </div><!-- end key-sections -->
+
+  <!-- ALL PARAMETERS -->
+  <div id="all-param-sections" class="all-params">
+    <hr class="sec-divider">
+    <div class="sec-group-title">All Parameters</div>
+    <div id="auto-sections"></div>
+  </div>
+
+  <div class="report-footer">
+    Sources: Metropolis Labs · Thyrocare · 1mg Labs (Tata 1mg Pune)<br>
+    † Apr-23, Sep-23, Apr-24 reconstructed from 1mg Smart Report trend section
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   EMBEDDED DATA — update this section when new readings arrive
+   Each array index corresponds to the same date column.
+   Use null for missing values.
+============================================================ */
+const D = {
+  // 26 date columns: Mar-14 through Apr-26
+  dates: ['06-Mar-14','07-Jun-14','14-Jun-14','13-Oct-14','30-Oct-14','10-Feb-15','20-Jun-15','21-Nov-15','28-Mar-16','28-Oct-16','15-Apr-17','11-Sep-18','04-Jan-22','21-Jul-22','24-Oct-22','05-Nov-22','13-Apr-23','14-Sep-23','23-Apr-24','16-Oct-24','15-Jan-25','18-Apr-25','24-Jun-25','23-Nov-25','09-Jan-26','03-Apr-26'],
+  keys:  ['Mar-14','Jun-14a','Jun-14b','Oct-14a','Oct-14b','Feb-15','Jun-15','Nov-15','Mar-16','Oct-16','Apr-17','Sep-18','Jan-22','Jul-22','Oct-22','Nov-22','Apr-23','Sep-23','Apr-24','Oct-24','Jan-25','Apr-25','Jun-25','Nov-25','Jan-26','Apr-26'],
+  labs:  ['Metropolis','Metropolis','Metropolis','Metropolis','Metropolis','Metropolis','Metropolis','Metropolis','Metropolis','Metropolis','Metropolis','Metropolis','Thyrocare','1mg','1mg','1mg','1mg','1mg','1mg','Metropolis','Metropolis','Metropolis','1mg','1mg','1mg','1mg'],
+
+  params: {
+    'Glucose Fasting (mg/dL)':        [90,98,null,111,109,97,94,92,93,109,88,111,108.7,null,92,null,94.35,null,null,null,109,99,102,null,95,101],
+    'Glucose Post-Prandial (mg/dL)':  [133,null,97,133,null,104,100,null,97,114,null,115,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
+    'HbA1c (%)':                      [5.5,5.5,null,5.7,null,5.5,5.5,5.3,5.5,5.6,5.4,5.7,6.1,null,5.7,null,5.8,5.7,5.8,5.7,6.0,6.1,6.0,null,6.2,6.1],
+    'Total Cholesterol (mg/dL)':      [125,164,null,133,null,162,151,150,163,180,159,174,165,null,221,null,184.8,224.87,115.35,112,127,128,120,null,203,106],
+    'Triglycerides (mg/dL)':          [82,68,null,57,null,66,74,67,65,118,73,107,90,null,57,null,null,57,48.08,65,67,42,51,null,80,42],
+    'HDL Cholesterol (mg/dL)':        [54,52,null,67,null,63,62,71,74,79,69,66,68,null,76,null,66.6,63.7,63.9,62,69,74,71,null,70,55],
+    'LDL Cholesterol (mg/dL)':        [55,98,null,55,null,86,74,66,76,77,75,87,90,null,134,null,105.2,149.77,41.83,37,44.6,45.6,39,null,117,43],
+    'VLDL (mg/dL)':                   [16,14,null,11,null,13,15,13,13,24,15,21,18,null,11,null,null,null,null,13,13.4,8.4,10,null,16,8],
+    'TC / HDL Ratio':                 [2.31,3.15,null,1.99,null,2.57,2.44,2.11,2.20,2.28,2.30,2.64,2.4,null,2.9,null,null,null,null,1.81,1.84,1.73,1.7,null,2.9,1.9],
+    'LDL / HDL Ratio':                [1.01,1.89,null,0.81,null,1.36,1.2,0.92,1.03,0.98,1.09,1.31,1.3,null,1.76,null,null,null,null,0.6,0.6,0.6,0.55,null,1.67,0.79],
+    'Non-HDL Cholesterol (mg/dL)':    [null,null,null,null,null,null,null,null,null,null,null,null,97.21,null,145,null,118.2,161.17,51.45,50,58,54,49,null,133,51],
+    'Bilirubin Total (mg/dL)':        [null,null,null,null,1.2,null,null,null,null,1.21,null,null,null,null,null,null,null,null,null,null,null,null,2.02,null,null,null],
+    'Bilirubin Direct (mg/dL)':       [null,null,null,null,0.22,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,0.71,null,null,null],
+    'Bilirubin Indirect (mg/dL)':     [null,null,null,null,0.98,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,1.31,null,null,null],
+    'SGOT / AST (U/L)':               [null,null,null,null,36,null,null,null,null,44,null,null,null,null,null,null,null,null,null,null,null,null,62,null,36,38],
+    'SGPT / ALT (U/L)':               [null,null,null,null,66,null,null,null,null,63,null,null,null,null,null,null,null,null,null,null,null,null,94,null,46,47],
+    'ALP (U/L)':                      [null,null,null,null,73,null,null,null,null,77,null,null,null,null,null,null,null,null,null,null,null,null,51,null,null,null],
+    'GGT (U/L)':                      [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,27,null,null,null],
+    'Protein Total (g/dL)':           [null,null,null,null,7.38,null,null,null,null,7.6,null,7.35,null,null,null,null,null,null,null,null,null,null,7.36,null,null,null],
+    'Albumin (g/dL)':                 [null,null,null,null,4.3,null,null,null,null,4.5,null,4.68,null,null,null,null,null,null,null,null,null,null,4.84,null,null,null],
+    'Globulin (g/dL)':                [null,null,null,null,3.08,null,null,null,null,3.1,null,2.67,null,null,null,null,null,null,null,null,null,null,2.5,null,null,null],
+    'Urea (mg/dL)':                   [null,41,null,null,36,null,null,null,null,36,null,31,null,null,null,null,null,null,null,null,null,null,37.6,null,null,null],
+    'BUN (mg/dL)':                    [null,null,null,null,16.82,null,null,null,null,16.82,null,14.7,null,null,null,null,null,null,null,null,null,null,18,null,null,null],
+    'Creatinine (mg/dL)':             [null,0.84,null,null,1.2,null,null,null,null,0.98,null,0.99,null,null,null,null,null,null,null,null,null,null,1.08,null,1.11,1.42],
+    'Uric Acid (mg/dL)':              [null,null,null,null,3.74,null,null,null,null,4,null,4,null,null,null,null,null,null,null,null,null,null,3.9,null,null,null],
+    'Sodium (mmol/L)':                [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,138,null,null,null],
+    'Potassium (mmol/L)':             [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,4.36,null,null,null],
+    'Chloride (mmol/L)':              [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,104.1,null,null,null],
+    'Microalbumin Urine (mg/L)':      [null,null,null,null,4.4,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,6.68,null,null,null],
+    'Hemoglobin (g/dL)':              [null,null,null,null,15.3,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,16.3,null,null,null],
+    'WBC (x10³/µL)':                  [null,null,null,null,6.4,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,5.39,null,null,null],
+    'Platelets (x10³/µL)':            [null,null,null,null,206,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,161,null,null,null],
+    'Neutrophils (%)':                 [null,null,null,null,51,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,47,null,null,null],
+    'Lymphocytes (%)':                 [null,null,null,null,42,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,38,null,null,null],
+    'CRP / hs-CRP (mg/L)':            [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,0.81,2.07,null,null],
+    'Iron Serum (µg/dL)':             [null,null,null,null,87,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,132,null,null,null],
+    'TIBC (µg/dL)':                   [null,null,null,null,307,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,302.13,null,null,null],
+    'Transferrin Saturation (%)':      [null,null,null,null,28.34,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,43.74,null,null,null],
+    'Vitamin D (ng/mL)':              [null,null,null,null,17.9,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,58.9,null,null,null],
+    'Vitamin B12 (pg/mL)':            [null,null,null,null,227,null,null,null,null,null,null,null,null,186,null,null,null,null,null,643,null,null,731.5,null,null,396.7],
+    'Folate / B9 (ng/mL)':            [null,null,null,null,5.8,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,17.15,null,null,null],
+    'Calcium (mg/dL)':                [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,9.5,null,null,null],
+    'T3 (ng/mL)':                     [null,null,null,null,1.19,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,0.98,null,null,null],
+    'T4 (µg/dL)':                     [null,null,null,null,6.2,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,7.5,null,null,null],
+    'TSH (µIU/mL)':                   [null,null,null,null,1.48,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,1.56,null,null,null],
+    'Testosterone (ng/dL)':            [null,null,null,null,746.84,null,null,null,null,null,null,null,null,480.39,null,null,null,null,null,null,null,null,null,null,null,null],
+    'PSA (ng/mL)':                    [null,null,null,null,null,null,null,null,null,null,null,0.796,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
+    'Homocysteine (µmol/L)':          [null,null,null,null,null,null,17.98,null,13.09,14.12,14.4,null,null,null,null,null,null,null,null,null,null,null,null,15.76,null,null]
+  }
+};
+
+const REPORT_LINKS = {
+  "Mar-14": "https://drive.google.com/open?id=1vl3ENSt2BWevAmAhjyuCmwU-lXUEySLk&usp=drive_copy",
+  "Jun-14a": "https://drive.google.com/open?id=1gMUbFTwCc9O8k33EUZpWSVAV_XUIa8nx&usp=drive_copy",
+  "Jun-14b": "https://drive.google.com/open?id=1aMKRunR_v0p2Fh0M1H4R4AqSeiR9GQVF&usp=drive_copy",
+  "Oct-14a": "https://drive.google.com/open?id=1KlZ3Nr_e_7YcKBOizCGCnghdryQwDGkx&usp=drive_copy",
+  "Oct-14b": "https://drive.google.com/open?id=1Z2Ll8RfgXIhAOTlMokPyBne8OlHks3tv&usp=drive_copy",
+  "Feb-15": "https://drive.google.com/open?id=17Ik1FV_VNhMhin7FWQrA7xtJcaelRYb0&usp=drive_copy",
+  "Jun-15": "https://drive.google.com/open?id=1XOWFUm4AVtBk1o5qcTIP88cu9l1G7oII&usp=drive_copy",
+  "Nov-15": "https://drive.google.com/open?id=134-T-iOQO4rCHU64LUjI_eo0VlxBJNNu&usp=drive_copy",
+  "Mar-16": "https://drive.google.com/open?id=11_CbOhGfgD7L86CxDSKk_xu5fKqGNjQI&usp=drive_copy",
+  "Oct-16": "https://drive.google.com/open?id=18N8kUQlCBU6aqdLCsnS86fgf9yBJQDEk&usp=drive_copy",
+  "Apr-17": "https://drive.google.com/open?id=1LXF_bXToCbDKQcOMeCdR2ZKwieEZ4t-i&usp=drive_copy",
+  "Sep-18": "https://drive.google.com/open?id=1PSXc8d8weLSEvG3hFn_K6Wsa3ee_2zmK&usp=drive_copy",
+  "Jan-22": "https://drive.google.com/open?id=1YwihPm3MtoPNQgSQ3dkuTQ1zAXdyFP1n&usp=drive_copy",
+  "Jul-22": "https://drive.google.com/open?id=1MvaocUTp7AdWuyZw7KigFNwY_keUwK5Y&usp=drive_copy",
+  "Oct-22": "https://drive.google.com/open?id=1UyYhnCmyGbyjniQoHmcfNbT6TrYAQynr&usp=drive_copy",
+  "Nov-22": "https://drive.google.com/open?id=1yUzUbeEnrdsnXzDEmp4ap3v3SdWUcJ9k&usp=drive_copy",
+  "Apr-23": "https://drive.google.com/open?id=1Zi9ryrlljrQ_zKe_fRTCK3NbTYF_HdQ1&usp=drive_copy",
+  "Sep-23": "https://drive.google.com/open?id=1Af61gz8aZkCjVZhst2OOcwIK-sfmSfaW&usp=drive_copy",
+  "Apr-24": "https://drive.google.com/open?id=1dbEoGBb0qLdfGFgk7ab4PT9B_lr0zzXe&usp=drive_copy",
+  "Oct-24": "https://drive.google.com/open?id=1MA_HF6zPxBOO8vN3wH5r_cnFABno1UDX&usp=drive_copy",
+  "Jan-25": "https://drive.google.com/open?id=1UtPM3bzVek9xUgZWn1x5gxM4kU9YTDqG&usp=drive_copy",
+  "Apr-25": "https://drive.google.com/open?id=1CXVvoS6ITGu8CxAWkBDj7b4Dme-sTE5H&usp=drive_copy",
+  "Jun-25": "https://drive.google.com/open?id=1jr-LPCEwqUKZBqrP_4B2XKrVSVLW-SU2&usp=drive_copy",
+  "Nov-25": "https://drive.google.com/open?id=1_UyVK9ebuN65SCeGb_Pzow-cJU4PLI_j&usp=drive_copy",
+  "Jan-26": "https://drive.google.com/open?id=1NK-fbumUJ9kw0fdTZZ_lNXYowcoAXyFK&usp=drive_copy",
+  "Apr-26": "https://drive.google.com/open?id=1uaupfDwGOo6fCSE5PCHnt4rURB_KzZXG&usp=drive_copy",
+};
+
+const MEDS = {
+  "Jan-26": "Razel (20) 0-0-1 | Ecosprin (75) 1-0-0 | Brilinta (90) 1-0-1 | Zilarbi (40) 0-0-1",
+  "Apr-26": "Brilinta (90) 1-0-1 | Ecosprin (75) 0-0-1 | Razel (20) 0-0-1 | Zilarbi (40) 0-0-1"
+};
+
+/* ============================================================
+   STATE
+============================================================ */
+let dateFilter = 'all';
+let viewMode = 'key';
+const charts = {};
+const gc = 'rgba(0,0,0,0.07)';
+const tk = { font: { size: 11 }, color: '#888' };
+
+/* ============================================================
+   HELPERS
+============================================================ */
+function getIndices() {
+  const n = D.dates.length;
+  if (dateFilter === 'recent') {
+    return Array.from({ length: Math.min(4, n) }, (_, i) => n - Math.min(4,n) + i);
+  }
+  return D.dates.map((_, i) => i);
+}
+function fd()          { return getIndices().map(i => D.dates[i]); }
+function fk()          { return getIndices().map(i => D.keys[i]); }
+function fl()          { return getIndices().map(i => D.labs[i]); }
+function fp(name)      { const v = D.params[name]; return v ? getIndices().map(i => v[i]) : getIndices().map(() => null); }
+function link(key)     { return REPORT_LINKS[key] || null; }
+function vBtn(key)     { const u = link(key); if(!u) return '—'; return `<a class="view-btn" href="${u}" target="_blank" rel="noopener">📄 View</a>`; }
+function med(key)      { return MEDS[key] || ''; }
+function pill(s)       { return s ? `<span class="pill ${s.cls}">${s.label}</span>` : '<span class="pill p-na">—</span>'; }
+function statusGeneric(v, hi, lo) {
+  if (v === null) return null;
+  if (lo !== undefined && v < lo) return { label:'Low', cls:'p-low' };
+  if (v > hi) return { label:'High', cls:'p-high' };
+  if (v > hi * 0.92) return { label:'Borderline', cls:'p-border' };
+  return { label:'Normal', cls:'p-normal' };
+}
+
+/* ============================================================
+   CHART PLUGIN
+============================================================ */
+function rp(bands, lines) {
+  return { id:'rp'+Math.random(), beforeDraw(chart) {
+    const { ctx, chartArea:ca, scales:{y} } = chart;
+    if (!ca) return;
+    ctx.save();
+    (bands||[]).forEach(([lo,hi,col]) => {
+      ctx.fillStyle=col;
+      ctx.fillRect(ca.left, y.getPixelForValue(Math.min(hi,y.max)), ca.right-ca.left, y.getPixelForValue(Math.max(lo,y.min))-y.getPixelForValue(Math.min(hi,y.max)));
+    });
+    (lines||[]).forEach(([v,col,lbl,side]) => {
+      if (v<y.min||v>y.max) return;
+      const yp=y.getPixelForValue(v);
+      ctx.strokeStyle=col; ctx.lineWidth=1; ctx.setLineDash([5,4]);
+      ctx.beginPath(); ctx.moveTo(ca.left,yp); ctx.lineTo(ca.right,yp); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle=col; ctx.font='10px -apple-system,sans-serif';
+      ctx.fillText(lbl, side==='right'?ca.right-110:ca.left+4, yp-3);
+    });
+    ctx.restore();
+  }};
+}
+
+function mkLine(id, labels, datasets, yOpts, plugins) {
+  if (charts[id]) charts[id].destroy();
+  const el = document.getElementById(id); if (!el) return;
+  charts[id] = new Chart(el, {
+    type:'line', data:{labels,datasets},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{mode:'index',intersect:false} },
+      scales:{ x:{ticks:{...tk,maxRotation:45,autoSkip:false},grid:{color:gc}},
+               y:{...yOpts, ticks:{...tk,...(yOpts.ticks||{})}, grid:{color:gc}} }
+    }, plugins
+  });
+}
+
+/* ============================================================
+   CHART BUILDERS
+============================================================ */
+function buildHba1c() {
+  const dates=fd(), keys=fk(), labs=fl();
+  const vals=fp('HbA1c (%)');
+  const ptC=vals.map(v=>v===null?'transparent':v>=6.5?'#E24B4A':v>=5.7?'#EF9F27':'#639922');
+  mkLine('c-hba1c', dates,
+    [{data:vals,borderColor:'#378ADD',borderWidth:2.5,backgroundColor:'transparent',
+      pointBackgroundColor:ptC,pointBorderColor:ptC,pointRadius:5,pointHoverRadius:8,tension:0.35,spanGaps:true}],
+    {min:4.8,max:7.2,ticks:{callback:v=>v.toFixed(1)+'%'}},
+    [rp([[4.8,5.7,'rgba(99,153,34,0.08)'],[5.7,6.5,'rgba(239,159,39,0.08)'],[6.5,7.2,'rgba(226,75,74,0.08)']],
+        [[5.7,'rgba(239,159,39,0.6)','5.7% pre-diabetic','left'],[6.5,'rgba(226,75,74,0.6)','6.5% diabetic','left']])]
+  );
+  const tb=document.getElementById('tbb-hba1c'); if(!tb) return; tb.innerHTML='';
+  dates.forEach((d,i)=>{
+    const v=vals[i]; if(v===null) return;
+    const m=med(keys[i]);
+    tb.innerHTML+=`<tr><td>${d}</td><td>${v.toFixed(1)}%</td><td>${vBtn(keys[i])}</td><td style="font-size:11px;color:#555;">${m}</td></tr>`;
+  });
+}
+
+function buildLipid1() {
+  const dates=fd(), keys=fk(), labs=fl();
+  const tc=fp('Total Cholesterol (mg/dL)'), ldl=fp('LDL Cholesterol (mg/dL)'), nhdl=fp('Non-HDL Cholesterol (mg/dL)');
+  mkLine('c-lipid1', dates, [
+    {label:'TC',data:tc,borderColor:'#3266ad',borderWidth:2.5,backgroundColor:'transparent',
+     pointBackgroundColor:tc.map(v=>v>200?'#E24B4A':'#3266ad'),pointBorderColor:tc.map(v=>v>200?'#E24B4A':'#3266ad'),
+     pointRadius:5,pointHoverRadius:8,tension:0.35,spanGaps:true},
+    {label:'LDL',data:ldl,borderColor:'#E24B4A',borderWidth:2.5,backgroundColor:'transparent',
+     pointBackgroundColor:ldl.map(v=>v===null?'transparent':v>100?'#E24B4A':v>70?'#EF9F27':'#639922'),
+     pointBorderColor:ldl.map(v=>v===null?'transparent':v>100?'#E24B4A':v>70?'#EF9F27':'#639922'),
+     pointRadius:5,pointHoverRadius:8,tension:0.35,spanGaps:true},
+    {label:'Non-HDL',data:nhdl,borderColor:'#9B59B6',borderDash:[6,3],borderWidth:2.5,backgroundColor:'transparent',
+     pointBackgroundColor:nhdl.map(v=>v===null?'transparent':v>130?'#E24B4A':'#9B59B6'),
+     pointBorderColor:nhdl.map(v=>v===null?'transparent':v>130?'#E24B4A':'#9B59B6'),
+     pointRadius:5,pointHoverRadius:8,tension:0.35,spanGaps:true}
+  ], {min:0,max:260,ticks:{callback:v=>v+''}},
+  [rp([],[[200,'rgba(50,102,173,0.4)','TC <200','right'],[100,'rgba(226,75,74,0.35)','LDL <100','right'],[70,'rgba(226,75,74,0.6)','LDL <70 cardiac','right'],[130,'rgba(155,89,182,0.4)','Non-HDL <130','left']])]
+  );
+  const tb=document.getElementById('tbb-lipid1'); if(!tb) return; tb.innerHTML='';
+  dates.forEach((d,i)=>{
+    const t=tc[i],l=ldl[i],n=nhdl[i];
+    if(t===null&&l===null&&n===null) return;
+    const m=med(keys[i]);
+    tb.innerHTML+=`<tr><td>${d}</td><td>${t!==null?t.toFixed(1):'—'}</td><td>${l!==null?l.toFixed(2):'—'}</td><td>${n!==null?n.toFixed(1):'—'}</td><td>${vBtn(keys[i])}</td><td style="font-size:11px;color:#555;">${m}</td></tr>`;
+  });
+}
+
+function buildLipid2() {
+  const dates=fd(), keys=fk(), labs=fl();
+  const hdl=fp('HDL Cholesterol (mg/dL)'), trig=fp('Triglycerides (mg/dL)');
+  mkLine('c-lipid2', dates, [
+    {label:'HDL',data:hdl,borderColor:'#639922',borderWidth:2.5,backgroundColor:'transparent',
+     pointBackgroundColor:hdl.map(v=>v===null?'transparent':v>=60?'#639922':'#EF9F27'),
+     pointBorderColor:hdl.map(v=>v===null?'transparent':v>=60?'#639922':'#EF9F27'),
+     pointRadius:5,pointHoverRadius:8,tension:0.35,spanGaps:true},
+    {label:'TG',data:trig,borderColor:'#BA7517',borderWidth:2.5,backgroundColor:'transparent',
+     pointBackgroundColor:'#BA7517',pointBorderColor:'#BA7517',
+     pointRadius:5,pointHoverRadius:8,tension:0.35,spanGaps:true}
+  ], {min:0,max:170,ticks:{callback:v=>v+''}},
+  [rp([],[[60,'rgba(99,153,34,0.55)','HDL >60 optimal','left'],[150,'rgba(186,117,23,0.45)','TG <150','right']])]
+  );
+  const tb=document.getElementById('tbb-lipid2'); if(!tb) return; tb.innerHTML='';
+  dates.forEach((d,i)=>{
+    const h=hdl[i],t=trig[i]; if(h===null&&t===null) return;
+    const m=med(keys[i]);
+    tb.innerHTML+=`<tr><td>${d}</td><td>${h!==null?h.toFixed(1):'—'}</td><td>${t!==null?t.toFixed(1):'—'}</td><td>${vBtn(keys[i])}</td><td style="font-size:11px;color:#555;">${m}</td></tr>`;
+  });
+}
+
+function buildLiver() {
+  const dates=fd(), keys=fk(), labs=fl();
+  const sgot=fp('SGOT / AST (U/L)'), sgpt=fp('SGPT / ALT (U/L)');
+  const idx=dates.map((_,i)=>i).filter(i=>sgot[i]!==null||sgpt[i]!==null);
+  if(!idx.length) return;
+  const fd2=idx.map(i=>dates[i]), fk2=idx.map(i=>keys[i]), fl2=idx.map(i=>labs[i]);
+  const sg=idx.map(i=>sgot[i]), sp=idx.map(i=>sgpt[i]);
+  mkLine('c-liver', fd2, [
+    {label:'SGOT',data:sg,borderColor:'#BA7517',borderDash:[6,3],borderWidth:2.5,backgroundColor:'transparent',
+     pointBackgroundColor:sg.map(v=>v===null?'transparent':v>37?'#E24B4A':'#639922'),
+     pointBorderColor:sg.map(v=>v===null?'transparent':v>37?'#E24B4A':'#639922'),
+     pointRadius:6,pointHoverRadius:8,tension:0.3,spanGaps:true},
+    {label:'SGPT',data:sp,borderColor:'#E24B4A',borderWidth:2.5,backgroundColor:'transparent',
+     pointBackgroundColor:sp.map(v=>v===null?'transparent':v>45?'#E24B4A':'#639922'),
+     pointBorderColor:sp.map(v=>v===null?'transparent':v>45?'#E24B4A':'#639922'),
+     pointRadius:6,pointHoverRadius:8,tension:0.3,spanGaps:true}
+  ], {min:0,max:110,ticks:{callback:v=>v+' U/L'}},
+  [rp([],[[37,'rgba(186,117,23,0.55)','SGOT limit 37','left'],[45,'rgba(226,75,74,0.55)','SGPT limit 45','left']])]
+  );
+  const tb=document.getElementById('tbb-liver'); if(!tb) return; tb.innerHTML='';
+  fd2.forEach((d,i)=>{
+    const go=sg[i],gp=sp[i];
+    const m=med(fk2[i]);
+    tb.innerHTML+=`<tr><td>${d}</td><td>${go!==null?go:'—'}</td><td>${gp!==null?gp:'—'}</td><td>${vBtn(fk2[i])}</td><td style="font-size:11px;color:#555;">${m}</td></tr>`;
+  });
+}
+
+function buildCreat() {
+  const dates=fd(), keys=fk(), labs=fl();
+  const vals=fp('Creatinine (mg/dL)');
+  const idx=dates.map((_,i)=>i).filter(i=>vals[i]!==null);
+  if(!idx.length) return;
+  const fd2=idx.map(i=>dates[i]), fk2=idx.map(i=>keys[i]), fl2=idx.map(i=>labs[i]), fv=idx.map(i=>vals[i]);
+  mkLine('c-creat', fd2,
+    [{data:fv,borderColor:'#378ADD',borderWidth:2.5,backgroundColor:'rgba(55,138,221,0.06)',
+      pointBackgroundColor:fv.map(v=>v>1.3?'#E24B4A':'#378ADD'),
+      pointBorderColor:fv.map(v=>v>1.3?'#E24B4A':'#378ADD'),
+      pointRadius:6,pointHoverRadius:8,tension:0.3,fill:true,spanGaps:true}],
+    {min:0.5,max:1.8,ticks:{callback:v=>v.toFixed(1)}},
+    [rp([[0.6,1.3,'rgba(55,138,221,0.05)']],[[1.3,'rgba(226,75,74,0.55)','Upper limit 1.3','right'],[0.6,'rgba(0,0,0,0.2)','Lower limit 0.6','right']])]
+  );
+  const tb=document.getElementById('tbb-creat'); if(!tb) return; tb.innerHTML='';
+  fd2.forEach((d,i)=>{
+    const v=fv[i];
+    const m=med(fk2[i]);
+    tb.innerHTML+=`<tr><td>${d}</td><td>${v.toFixed(2)}</td><td>${vBtn(fk2[i])}</td><td style="font-size:11px;color:#555;">${m}</td></tr>`;
+  });
+}
+
+function buildAllParams() {
+  const container=document.getElementById('auto-sections'); if(!container) return;
+  container.innerHTML='';
+  const dates=fd(), keys=fk(), labs=fl();
+  Object.keys(D.params).forEach((name,idx)=>{
+    const vals=fp(name);
+    const hasData=vals.some(v=>v!==null); if(!hasData) return;
+    const cid='ac-'+idx, tid='at-'+idx, tbid='atb-'+idx;
+    const div=document.createElement('div'); div.className='section';
+    div.innerHTML=`<div class="section-title" style="font-size:14px;margin-bottom:10px;">${name}</div>
+      <div class="chart-wrap" style="height:200px;"><canvas id="${cid}"></canvas></div>
+      <button class="toggle-btn" id="${tbid}" onclick="toggleTable('${tid}','${tbid}')"><span class="t-arrow">▾</span> Show data table</button>
+      <div class="data-table-wrap" id="${tid}">
+        <table><thead><tr><th>Date</th><th>${name}</th><th>Lab</th><th>Report</th></tr></thead>
+        <tbody id="atbb-${idx}"></tbody></table>
+      </div>`;
+    container.appendChild(div);
+    setTimeout(()=>{
+      const fDts=[],fVls=[],fKs=[],fLbs=[];
+      dates.forEach((d,i)=>{if(vals[i]!==null){fDts.push(d);fVls.push(vals[i]);fKs.push(keys[i]);fLbs.push(labs[i]);}});
+      if(charts[cid]) charts[cid].destroy();
+      const el=document.getElementById(cid); if(!el) return;
+      charts[cid]=new Chart(el,{type:'line',data:{labels:fDts,datasets:[{data:fVls,borderColor:'#5b8dd9',borderWidth:2,backgroundColor:'rgba(91,141,217,0.07)',pointBackgroundColor:'#5b8dd9',pointRadius:4,pointHoverRadius:7,tension:0.35,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{...tk,maxRotation:45,autoSkip:true},grid:{color:gc}},y:{ticks:{...tk},grid:{color:gc}}}}});
+      const tbody=document.getElementById('atbb-'+idx); if(!tbody) return;
+      fDts.forEach((d,i)=>{tbody.innerHTML+=`<tr><td>${d}</td><td>${fVls[i]}</td><td>${fLbs[i]||'—'}</td><td>${vBtn(fKs[i])}</td></tr>`;});
+    },0);
+  });
+}
+
+/* ============================================================
+   TOGGLE / FILTERS / VIEW
+============================================================ */
+function toggleTable(tid, bid) {
+  const t=document.getElementById(tid), b=document.getElementById(bid); if(!t||!b) return;
+  const open=t.classList.toggle('open');
+  b.classList.toggle('open',open);
+  b.innerHTML=`<span class="t-arrow">${open?'▴':'▾'}</span> ${open?'Hide':'Show'} data table`;
+}
+
+function setDateFilter(mode) {
+  dateFilter=mode;
+  document.getElementById('btn-all').classList.toggle('active',mode==='all');
+  document.getElementById('btn-r4').classList.toggle('active',mode==='recent');
+  updateNote(); renderAll();
+}
+
+function setView(mode) {
+  viewMode=mode;
+  document.getElementById('btn-key').classList.toggle('active',mode==='key');
+  document.getElementById('btn-all-p').classList.toggle('active',mode==='all');
+  document.getElementById('key-sections').style.display=mode==='key'?'block':'none';
+  const ap=document.getElementById('all-param-sections');
+  if(mode==='all'){ ap.classList.add('visible'); buildAllParams(); }
+  else ap.classList.remove('visible');
+  updateNote();
+}
+
+function updateNote() {
+  const d=dateFilter==='recent'?'Last 4':'Full history';
+  const v=viewMode==='all'?'all params':'key params';
+  document.getElementById('ctrl-note').textContent=d+' · '+v;
+}
+
+function renderAll() {
+  buildHba1c(); buildLipid1(); buildLipid2(); buildLiver(); buildCreat();
+  if(viewMode==='all') buildAllParams();
+}
+
+// Start
+renderAll();
+</script>
+</body>
+</html>
