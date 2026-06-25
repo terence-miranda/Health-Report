@@ -180,23 +180,19 @@ function link(key){
 }
 function vBtn(key){ const u=link(key); if(!u) return '—'; return `<a class="view-btn" href="${u}" target="_blank" rel="noopener">📄 View</a>`; }
 function dateToNum(dateStr){
-  const MONTHS={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11,june:5,july:6};
-  // Try to extract month name and 2-digit year from strings like "03-Apr-26" or "24-Jun-26"
-  const m=dateStr.match(/[^a-z]([a-z]{3,})[^a-z]*(d{2})(?:D|$)/i);
+  const MONTHS={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+  const m=dateStr.match(/([A-Za-z]{3})[a-z]*[-/](d{2})/i);
   if(!m) return 0;
   const mon=MONTHS[m[1].toLowerCase()];
   if(mon===undefined) return 0;
-  const yr=2000+parseInt(m[2]);
-  return yr*100+mon;
+  return (2000+parseInt(m[2]))*100+mon;
 }
 function rxBtn(dateStr){
   const testNum=dateToNum(dateStr);
   if(!testNum) return '';
-  // Find most recent prescription BEFORE the test date (strictly less than)
-  const rxDates=Object.keys(RX_LINKS).map(Number).filter(d=>d<testNum).sort((a,b)=>b-a);
+  const rxDates=Object.keys(RX_LINKS).map(Number).filter(function(d){return d<testNum;}).sort(function(a,b){return b-a;});
   if(!rxDates.length) return '';
-  const u=RX_LINKS[rxDates[0]];
-  return ` <a class="view-btn" style="background:#e8f5e9;border-color:#a5d6a7;color:#2e7d32;" href="${u}" target="_blank" rel="noopener">Rx</a>`;
+  return ` <a class="view-btn" style="background:#e8f5e9;border-color:#a5d6a7;color:#2e7d32;" href="${RX_LINKS[rxDates[0]]}" target="_blank" rel="noopener">Rx</a>`;
 }
 function med(key){ return D.meds[D.keys.indexOf(key)]||''; }
 
