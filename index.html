@@ -45,7 +45,7 @@ tbody tr { border-bottom: 1px solid #f0f0ec; }
 tbody tr:last-child { border-bottom: none; }
 tbody tr:nth-child(even) { background: #fafaf8; }
 tbody td { padding: 7px 11px; color: #333; vertical-align: middle; }
-tbody td:last-child { font-size: 11px; color: #555; line-height: 1.5; min-width: 220px; }
+tbody td:last-child { font-size: 11px; color: #555; line-height: 1.5; min-width: 220px; white-space: normal; word-wrap: break-word; }
 .view-btn { padding: 4px 10px; border-radius: 5px; border: 1px solid #b5d0ee; background: #e8f1fb; color: #1a3a5c; font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
 .sec-divider { border: none; border-top: 1px solid #e0e0da; margin: 1.5rem 0 1rem; }
 .sec-group-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #999; margin-bottom: 1rem; }
@@ -98,9 +98,9 @@ tbody td:last-child { font-size: 11px; color: #555; line-height: 1.5; min-width:
 <script>
 const D = {
   dates:  ["06-Mar-14","07-Jun-14","14-Jun-14","13-Oct-14","30-Oct-14","10-Feb-15","20-Jun-15","21-Nov-15","28-Mar-16","Prameter Type","28-Oct-16","15-Apr-17","11-Sep-18","04-Jan-22","21-Jul-22","24-Oct-22","05-Nov-22","13-Apr-23","14-Sep-23","23-Apr-24","16-Oct-24","15-Jan-25","18-Apr-25","24-Jun-25","23-Nov-25","09-Jan-26","03-Apr-26","24-Jun-26"],
-  keys:   ["Mar-14","Jun-14a","Jun-14b","Oct-14a","Oct-14b","Feb-15","Jun-15","Nov-15","Mar-16","Prameter Type","Oct-16","Apr-17","Sep-18","Jan-22","Jul-22","Oct-22","Nov-22","Apr-23","Sep-23","Apr-24","Oct-24","Jan-25","Apr-25","Jun-25","Nov-25","Jan-26","Apr-26","June-26"],
+  keys:   ["Mar-14","Jun-14","Jun-14","Oct-14","Oct-14","Feb-15","Jun-15","Nov-15","Mar-16","Prameter Type","Oct-16","Apr-17","Sep-18","Jan-22","Jul-22","Oct-22","Nov-22","Apr-23","Sep-23","Apr-24","Oct-24","Jan-25","Apr-25","Jun-25","Nov-25","Jan-26","Apr-26","Jun-26"],
   labs:   ["Metropolis","Metropolis","Metropolis","Metropolis","Metropolis","Metropolis","Metropolis","Metropolis","Metropolis","","Metropolis","Metropolis","Metropolis","Thyrocare","1mg","1mg","1mg","1mg †","1mg †","1mg †","Metropolis","Metropolis","Metropolis","1mg","1mg","1mg","1mg","1mg"],
-  meds:   ["","","","","","","","","","","","","","","","","","","","","","","","","","Brillo EZ (0-0-1)|Razel (20) 0-0-1 | Ecosprin (75) 1-0-0 |  Zilarbi (40) 0-0-1","Brilinta (90) 1-0-1 | Ecosprin (75) 0-0-1 | Razel (20) 0-0-1 | Zilarbi (40) 0-0-1","Brilinta (90) 1-0-1 | Ecosprin (75) 0-0-1 | Razel (20) 0-0-1 | Zilarbi (40) 0-0-1"],
+  meds:   ["","","","","","","","","","","","","","","","","","","","","","","","","","Brilinta (90) 1-0-1 |Razel (20) 0-0-1 | Ecosprin (75) 1-0-0 |  Zilarbi (40) 0-0-1( Not Taking Brill EZ as was supecting it caused the stomac pain issue)","Brillo  EZ  0-0-1 |Brilinta (90)  1-0-1 | Ecosprin (75) 0-0-1 | Razel (20) 0-0-1 | Zilarbi (40) 0-0-1( did not take repatha- continued Brillo  EZ instead","Brillo  EZ  0-0-1 |Brilinta (90)  1-0-1 | Ecosprin (75) 0-0-1 | Razel (20) 0-0-1 | Zilarbi (40) 0-0-1( did not take repatha- continued Brillo  EZ instead"],
   params: {
     "Glucose Fasting (mg/dL)": [90,98,null,111,109,97,94,92,93,null,109,88,111,108.7,null,92,null,94.35,null,null,null,109,99,102,null,95,101,93],
     "Glucose Post-Prandial (mg/dL)": [133,null,97,133,null,104,100,null,97,null,114,null,115,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
